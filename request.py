@@ -28,6 +28,9 @@ class Request(object):
     def __str__(self):
         return str(self._Dict)
 
+    def dict(self):
+        return self._Dict
+
 
 def main():
     rqst = (b'GET / HTTP/1.1\r\n'
