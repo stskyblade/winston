@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+"""
+@version: ??
+@author: stskyblade
+@contact: stskyblade@outlook.com
+@file: request.py
+@time: 7/31/2017 7:22 PM
+"""
+
+
 def strToByte(s):
     return s.encode('utf8')
 
@@ -18,12 +30,12 @@ class Request(object):
         firstLine = tmp[0]
         headers = tmp[1:]
 
-        self._Dict['METHOD'], self._Dict['URL'], self._Dict['HTTP-VERSION'] \
+        self._Dict['REQUEST_METHOD'], self._Dict['PATH_INFO'], self._Dict['SERVER_PROTOCOL'] \
             = firstLine.split(' ')
         for header in headers:
             if header:
                 k, v = header.split(':', 1)
-                self._Dict[k.upper()] = v
+                self._Dict['HTTP_' + k.upper().replace('-', "_")] = v
 
     def __str__(self):
         return str(self._Dict)
