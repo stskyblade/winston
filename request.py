@@ -10,7 +10,8 @@
 """
 
 from urllib.parse import unquote
-
+import re
+import os
 
 def strToByte(s):
     return s.encode('utf8')
@@ -55,16 +56,43 @@ class Request(object):
                 k, v = header.split(':', 1)
                 self._Dict['HTTP_' + k.upper().replace('-', "_")] = v
 
-    def handle_post(self, rqstBodyB):
-        from urllib.parse import unquote
+    def handle_post(self, rqstBodyB, multi=False, boundaryB=None):
+        if multi:
+            parts = rqstBodyB.split(boundaryB)[1:-1]
+            self._Dict['POST'] = {}
+            for part in parts:
+                self.handle_part(part)
+        else:
+            from urllib.parse import unquote
 
-        rqstBody = unquote(rqstBodyB.decode('utf8'))
-        print(rqstBody)
-        args = rqstBody.split('&')
-        self._Dict['POST'] = {}
-        for arg in args:
-            k, v = arg.split('=')
-            self._Dict['POST'][k] = v
+            rqstBody = unquote(rqstBodyB.decode('utf8'))
+            print(rqstBody)
+            args = rqstBody.split('&')
+            self._Dict['POST'] = {}
+            for arg in args:
+                k, v = arg.split('=')
+                self._Dict['POST'][k] = v
+
+    def handle_part(self, partB):
+        if b'filename=' not in partB:
+            k = re.findall(b'".*"', partB)[0].strip(b'"')
+            v = re.findall(b'\r\n\r\n.*\r\n', partB)[0].strip(b'\r\n')
+            self._Dict['POST'][k.decode('utf8')] = v.decode('utf8')
+        else:
+            k, filename = re.findall(b'name="[\w\.]*"', partB)
+            k = k.strip(b'name=').strip(b'"').decode('utf8')
+            filename = filename.strip(b'name=').strip(b'"').decode('utf8')
+            data = partB.split(b'\r\n\r\n')[1].strip(b'\r\n--')
+
+            # write file
+            if not os.path.isdir('static/tmp'):
+                os.mkdir('static/tmp')
+            filename = 'static/tmp/' + filename
+            with open(filename, 'wb') as f:
+                f.write(data)
+                f.close()
+
+            self._Dict['POST'][k] = filename
 
     def __str__(self):
         return str(self._Dict)

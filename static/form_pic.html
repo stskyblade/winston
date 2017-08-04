@@ -9,9 +9,11 @@
 <link href="" rel="stylesheet">
 </head>
 <body>
-    <form action="/env" method="post">
-        <input type="file" name="pic">
-        <input type="submit">
+    <form action="/env" method="post" enctype="multipart/form-data">
+        Text: <input type="text" name="filename"><br>
+        <input type="file" name="pic"><br>
+        <input type="file" name="txt"><br>
+        <input type="submit"><br>
     </form>
 </body>
 </html>

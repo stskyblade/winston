@@ -104,8 +104,15 @@ class Winston(object):
                 # handle request body
                 length = rqst.dict().get('HTTP_CONTENT_LENGTH', None)
                 if length:
-                    body = client_sock.recv(int(length))
-                    rqst.handle_post(body)
+                    content_type = rqst.dict()['HTTP_CONTENT_TYPE']
+                    if 'multipart' in content_type:
+                        body = client_sock.recv(int(length))
+                        self.logging(body, 'request content')
+                        rqst.handle_post(body, True, content_type[content_type.index('=') + 1:].encode('utf8'))
+                    else:
+                        body = client_sock.recv(int(length))
+                        self.logging(body, 'request content')
+                        rqst.handle_post(body)
 
                 def start_response(status, response_headers):
                     resp = 'HTTP/1.1 %s\r\n' % status
