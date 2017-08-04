@@ -13,13 +13,6 @@ from urllib.parse import unquote
 import re
 import os
 
-def strToByte(s):
-    return s.encode('utf8')
-
-
-def byteToStr(b):
-    return b.decode('utf8')
-
 
 class Request(object):
     """docstring for Request"""
@@ -33,6 +26,7 @@ class Request(object):
         firstLine = tmp[0]
         headers = tmp[1:]
 
+        print("firstLine:", firstLine)
         self._Dict['REQUEST_METHOD'], self._Dict['PATH_INFO'],\
             self._Dict['SERVER_PROTOCOL'] = firstLine.split(' ')
         self._Dict['PATH_INFO'] = unquote(self._Dict['PATH_INFO'])
@@ -56,12 +50,21 @@ class Request(object):
                 k, v = header.split(':', 1)
                 self._Dict['HTTP_' + k.upper().replace('-', "_")] = v
 
-    def handle_post(self, rqstBodyB, multi=False, boundaryB=None):
+    def handle_post(self, contentB):
+        content_type = self._Dict['HTTP_CONTENT_TYPE']
+        if 'multipart' in content_type:
+            self._handle_post(contentB,
+                              True,
+                              content_type[content_type.index('=') + 1:].encode('utf8'))
+        else:
+            self._handle_post(contentB)
+
+    def _handle_post(self, rqstBodyB, multi=False, boundaryB=None):
         if multi:
             parts = rqstBodyB.split(boundaryB)[1:-1]
             self._Dict['POST'] = {}
             for part in parts:
-                self.handle_part(part)
+                self._handle_part(part)
         else:
             from urllib.parse import unquote
 
@@ -73,7 +76,7 @@ class Request(object):
                 k, v = arg.split('=')
                 self._Dict['POST'][k] = v
 
-    def handle_part(self, partB):
+    def _handle_part(self, partB):
         if b'filename=' not in partB:
             k = re.findall(b'".*"', partB)[0].strip(b'"')
             v = re.findall(b'\r\n\r\n.*\r\n', partB)[0].strip(b'\r\n')
